@@ -1,40 +1,41 @@
-package ec.edu.epn.controller;
+package ec.edu.epn.view;
 
-import javafx.application.Application;
-import javafx.application.Platform;
-import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
+import javafx.application.Platform;
 
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.*;
 import java.util.function.Consumer;
 
-public class MainController extends Application {
-
-    private static final int NUM_BARS = 50;
-    private int[] data;
+public class MainView {
 
     private RadioButton bubbleSortRadio;
     private RadioButton selectionSortRadio;
     private RadioButton insertionSortRadio;
     private ChoiceBox<String> listTypeChoiceBox;
     private AnchorPane visualizationPane;
+    private ToggleGroup algorithmToggleGroup;
+    private int[] data;
+    private static final int NUM_BARS = 50;
 
-    @Override
-    public void start(@SuppressWarnings("exports") Stage primaryStage) {
-        // Crear el ToggleGroup para los radio buttons
-        ToggleGroup algorithmToggleGroup = new ToggleGroup();
+    public void show(Stage primaryStage) {
+        BorderPane root = new BorderPane();
 
-        // Crear los radio buttons
+        // Panel izquierdo
+        VBox leftPane = new VBox(10);
+        leftPane.setPadding(new Insets(10));
+        Label titleLabel = new Label("Algoritmos de ordenamiento");
+
+        algorithmToggleGroup = new ToggleGroup();
+
         bubbleSortRadio = new RadioButton("Bubble Sort");
         bubbleSortRadio.setToggleGroup(algorithmToggleGroup);
-        bubbleSortRadio.setSelected(true);
 
         selectionSortRadio = new RadioButton("Selection Sort");
         selectionSortRadio.setToggleGroup(algorithmToggleGroup);
@@ -42,66 +43,42 @@ public class MainController extends Application {
         insertionSortRadio = new RadioButton("Insertion Sort");
         insertionSortRadio.setToggleGroup(algorithmToggleGroup);
 
-        // Lista para elección del tipo de lista
-        listTypeChoiceBox = new ChoiceBox<>(FXCollections.observableArrayList(
-                "Ordenada", "Inversamente ordenada", "Aleatoria"));
+        Label listLabel = new Label("Tipo de lista:");
+        listLabel.setPadding(new Insets(10, 0, 0, 0));
+
+        listTypeChoiceBox = new ChoiceBox<>();
+        listTypeChoiceBox.getItems().addAll("Ordenada", "Inversamente ordenada", "Aleatoria");
         listTypeChoiceBox.getSelectionModel().selectFirst();
 
-        // Panel izquierdo (VBox) con radio buttons y choice box
-        VBox leftPane = new VBox(10);
-        leftPane.setPadding(new Insets(10));
-        Label algLabel = new Label("Algoritmos de ordenamiento");
-        Label listTypeLabel = new Label("Tipo de lista:");
-        listTypeLabel.setPadding(new Insets(10, 0, 0, 0));
-
         leftPane.getChildren().addAll(
-                algLabel,
-                bubbleSortRadio,
-                selectionSortRadio,
-                insertionSortRadio,
-                listTypeLabel,
-                listTypeChoiceBox);
+                titleLabel, bubbleSortRadio, selectionSortRadio, insertionSortRadio, listLabel, listTypeChoiceBox
+        );
 
-        // Panel central: AnchorPane para visualización
+        root.setLeft(leftPane);
+
+        // Panel central
         visualizationPane = new AnchorPane();
         visualizationPane.setStyle("-fx-background-color: #f4f4f4;");
+        root.setCenter(visualizationPane);
 
-        // Botones en la parte inferior
-        Button startSortBtn = new Button("Iniciar ordenamiento");
-        startSortBtn.setOnAction(e -> startSorting());
-
-        Button showGraphBtn = new Button("Ver gráficas de rendimiento");
-        showGraphBtn.setOnAction(e -> openGraphWindow());
-
+        // Panel inferior
         HBox bottomPane = new HBox(10);
         bottomPane.setPadding(new Insets(10));
-        bottomPane.setStyle("-fx-alignment: center-right;");
-        bottomPane.getChildren().addAll(startSortBtn, showGraphBtn);
+        bottomPane.setAlignment(Pos.CENTER_RIGHT);
 
-        // Crear el BorderPane principal
-        BorderPane root = new BorderPane();
-        root.setLeft(leftPane);
-        root.setCenter(visualizationPane);
+        Button sortButton = new Button("Iniciar ordenamiento");
+        sortButton.setOnAction(e -> startSorting());
+
+        Button graphButton = new Button("Ver gráficas de rendimiento");
+        graphButton.setOnAction(e -> showGraphWindow());
+
+        bottomPane.getChildren().addAll(sortButton, graphButton);
         root.setBottom(bottomPane);
 
-        // Configurar escena y mostrar ventana
-        Scene scene = new Scene(root, 900, 600);
+        Scene scene = new Scene(root, 800, 600);
+        primaryStage.setTitle("Visualizador de Algoritmos de Ordenamiento");
         primaryStage.setScene(scene);
-        primaryStage.setTitle("Visualización de algoritmos de ordenamiento");
         primaryStage.show();
-
-        // Inicializar datos
-        generateList();
-    }
-
-    private void openGraphWindow() {
-        GraphController graph = new GraphController();
-        Stage stage = new Stage();
-        try {
-            graph.start(stage);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     private void drawData(int[] array) {
@@ -109,12 +86,7 @@ public class MainController extends Application {
             visualizationPane.getChildren().clear();
             double width = visualizationPane.getWidth();
             double height = visualizationPane.getHeight();
-            if (width == 0 || height == 0) {
-                width = 800; // valor por defecto si no está renderizado aún
-                height = 400;
-            }
             double barWidth = width / array.length;
-
             int maxVal = Arrays.stream(array).max().orElse(1);
 
             for (int i = 0; i < array.length; i++) {
@@ -126,19 +98,19 @@ public class MainController extends Application {
         });
     }
 
-    private void animateSort(int[] array, Consumer<int[]> sortingAlgorithm) {
-        new Thread(() -> {
-            int[] copy = Arrays.copyOf(array, array.length);
-            sortingAlgorithm.accept(copy);
-        }).start();
-    }
-
     private void sleepAndDraw(int[] array) {
         drawData(array);
         try {
             Thread.sleep(50);
         } catch (InterruptedException ignored) {
         }
+    }
+
+    private void animateSort(int[] array, Consumer<int[]> sortingAlgorithm) {
+        new Thread(() -> {
+            int[] copy = Arrays.copyOf(array, array.length);
+            sortingAlgorithm.accept(copy);
+        }).start();
     }
 
     public void startSorting() {
@@ -154,8 +126,7 @@ public class MainController extends Application {
 
     private void generateList() {
         data = new int[NUM_BARS];
-        for (int i = 0; i < NUM_BARS; i++)
-            data[i] = i + 1;
+        for (int i = 0; i < NUM_BARS; i++) data[i] = i + 1;
 
         String selected = listTypeChoiceBox.getValue();
         if ("Inversamente ordenada".equals(selected)) {
@@ -165,11 +136,9 @@ public class MainController extends Application {
                 data[NUM_BARS - i - 1] = temp;
             }
         } else if ("Aleatoria".equals(selected)) {
-            // Desempaquetar, hacer shuffle y volver a asignar
-            Integer[] boxed = Arrays.stream(data).boxed().toArray(Integer[]::new);
-            Collections.shuffle(Arrays.asList(boxed));
-            for (int i = 0; i < data.length; i++)
-                data[i] = boxed[i];
+            List<Integer> temp = Arrays.asList(Arrays.stream(data).boxed().toArray(Integer[]::new));
+            Collections.shuffle(temp);
+            for (int i = 0; i < data.length; i++) data[i] = temp.get(i);
         }
 
         drawData(data);
@@ -192,8 +161,7 @@ public class MainController extends Application {
         for (int i = 0; i < array.length - 1; i++) {
             int min = i;
             for (int j = i + 1; j < array.length; j++) {
-                if (array[j] < array[min])
-                    min = j;
+                if (array[j] < array[min]) min = j;
             }
             if (min != i) {
                 int tmp = array[i];
@@ -218,7 +186,11 @@ public class MainController extends Application {
         }
     }
 
-    public static void main(String[] args) {
-        launch(args);
+    private void showGraphWindow() {
+        // Aquí deberías implementar el contenido de la nueva ventana
+        Stage graphStage = new Stage();
+        graphStage.setTitle("Gráficas de rendimiento");
+        graphStage.setScene(new Scene(new Label("Gráficas aquí..."), 300, 200));
+        graphStage.show();
     }
 }

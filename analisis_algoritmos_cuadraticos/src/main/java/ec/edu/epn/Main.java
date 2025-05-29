@@ -1,19 +1,13 @@
 package ec.edu.epn;
 
-import controller.MainController;
 import javafx.application.Application;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Scene;
 import javafx.stage.Stage;
+import ec.edu.epn.view.MainView;
 
 public class Main extends Application {
     @Override
-    public void start(Stage primaryStage) throws Exception {
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/MainView.fxml"));
-        Scene scene = new Scene(loader.load());
-        primaryStage.setTitle("Visualizador de Algoritmos de Ordenamiento");
-        primaryStage.setScene(scene);
-        primaryStage.show();
+    public void start(@SuppressWarnings("exports") Stage primaryStage) {
+        new MainView().show(primaryStage);
     }
 
     public static void main(String[] args) {
