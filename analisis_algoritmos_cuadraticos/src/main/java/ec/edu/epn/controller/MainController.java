@@ -46,7 +46,7 @@ public class MainController extends Application {
     private final String BAR_COLOR = "#9b59b6";      // Morado vibrante
 
     @Override
-    public void start(Stage primaryStage) {
+    public void start(@SuppressWarnings("exports") Stage primaryStage) {
         String modernStyle =
                 "-fx-base: " + DARK_BG + ";\n" +
                 "-fx-background: " + DARK_BG + ";\n" +
@@ -440,6 +440,7 @@ public class MainController extends Application {
         });
     }
 
+    @SuppressWarnings("unchecked")
     private void showComparisonChart() {
         Stage stage = new Stage();
         stage.setTitle("Comparación de Tiempos - Arreglo de 50 Elementos");
