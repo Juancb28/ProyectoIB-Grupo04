@@ -1,5 +1,6 @@
 package ec.edu.epn.controller;
 
+import ec.edu.epn.model.*;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -12,10 +13,6 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
-import javafx.scene.chart.BarChart;
-import javafx.scene.chart.CategoryAxis;
-import javafx.scene.chart.NumberAxis;
-import javafx.scene.chart.XYChart;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,6 +21,7 @@ import java.util.Random;
 
 public class MainController extends Application {
 
+    @SuppressWarnings("unused")
     private static final int NUM_BARS = 50;
     private int[] data;
     private RadioButton bubbleSortRadio;
@@ -35,25 +33,27 @@ public class MainController extends Application {
     private List<Rectangle> bars = new ArrayList<>();
     private List<Text> valueLabels = new ArrayList<>();
     private boolean running = false;
+    private Timer timer = new Timer();
+    private Button startSortBtn;
 
-    // Nueva paleta de colores vibrantes
-    private final String PRIMARY_COLOR = "#3498db";  // Azul brillante
-    private final String SECONDARY_COLOR = "#2ecc71"; // Verde esmeralda
-    private final String ACCENT_COLOR = "#e74c3c";   // Rojo coral
-    private final String HIGHLIGHT_COLOR = "#f1c40f"; // Amarillo vibrante
-    private final String DARK_BG = "#2c3e50";       // Azul oscuro
-    private final String LIGHT_TEXT = "#ecf0f1";     // Blanco suave
-    private final String BAR_COLOR = "#9b59b6";      // Morado vibrante
+    private final String PRIMARY_COLOR = "#3498db";
+    private final String SECONDARY_COLOR = "#2ecc71";
+    private final String ACCENT_COLOR = "#e74c3c";
+    private final String HIGHLIGHT_COLOR = "#f1c40f";
+    private final String DARK_BG = "#2c3e50";
+    private final String LIGHT_TEXT = "#ecf0f1";
+    private final String BAR_COLOR = "#9b59b6";
+
+    private final SortAlgorithm bubbleSort = new BubbleSort();
+    private final SortAlgorithm selectionSort = new SelectionSort();
+    private final SortAlgorithm insertionSort = new InsertionSort();
 
     @Override
     public void start(@SuppressWarnings("exports") Stage primaryStage) {
-        String modernStyle =
-                "-fx-base: " + DARK_BG + ";\n" +
-                "-fx-background: " + DARK_BG + ";\n" +
-                "-fx-control-inner-background: #34495e;\n" +
-                "-fx-text-fill: " + LIGHT_TEXT + ";\n" +
-                "-fx-accent: " + PRIMARY_COLOR + ";\n" +
-                "-fx-font-family: 'Segoe UI', Helvetica, Arial, sans-serif;";
+        String modernStyle = String.format(
+                "-fx-base: %s; -fx-background: %s; -fx-control-inner-background: #34495e; " +
+                        "-fx-text-fill: %s; -fx-accent: %s; -fx-font-family: 'Segoe UI', Helvetica, Arial, sans-serif;",
+                DARK_BG, DARK_BG, LIGHT_TEXT, PRIMARY_COLOR);
 
         VBox leftPane = createControlPanel();
         leftPane.setStyle(modernStyle + "-fx-padding: 15; -fx-background-color: " + DARK_BG + ";");
@@ -138,21 +138,24 @@ public class MainController extends Application {
     }
 
     private HBox createBottomPanel() {
-        Button startSortBtn = createStyledButton("Iniciar Ordenamiento", SECONDARY_COLOR);
+        startSortBtn = createStyledButton("Iniciar Ordenamiento", SECONDARY_COLOR);
         startSortBtn.setOnAction(e -> {
             if (!running) {
-                running = true;
                 startSorting();
             }
         });
 
         Button stopSortBtn = createStyledButton("Detener", ACCENT_COLOR);
-        stopSortBtn.setOnAction(e -> running = false);
+        stopSortBtn.setOnAction(e -> {
+            running = false;
+            startSortBtn.setDisable(false);
+        });
 
         Button resetBtn = createStyledButton("Reiniciar", PRIMARY_COLOR);
         resetBtn.setOnAction(e -> {
             running = false;
             generateList();
+            startSortBtn.setDisable(false);
         });
 
         Button compareBtn = createStyledButton("Comparar Tiempos", BAR_COLOR);
@@ -169,64 +172,68 @@ public class MainController extends Application {
         Button button = new Button(text);
         button.setStyle(
                 "-fx-background-color: " + color + ";" +
-                "-fx-text-fill: white;" +
-                "-fx-font-weight: bold;" +
-                "-fx-font-size: 14;" +
-                "-fx-padding: 10 20;" +
-                "-fx-background-radius: 8;" +
-                "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 5, 0, 0, 1);"
-        );
+                        "-fx-text-fill: white;" +
+                        "-fx-font-weight: bold;" +
+                        "-fx-font-size: 14;" +
+                        "-fx-padding: 10 20;" +
+                        "-fx-background-radius: 8;" +
+                        "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 5, 0, 0, 1);");
 
         button.setOnMouseEntered(e -> button.setStyle(
                 "-fx-background-color: derive(" + color + ", 20%);" +
-                "-fx-text-fill: white;" +
-                "-fx-font-weight: bold;" +
-                "-fx-font-size: 14;" +
-                "-fx-padding: 10 20;" +
-                "-fx-background-radius: 8;" +
-                "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 8, 0, 0, 2);"
-        ));
+                        "-fx-text-fill: white;" +
+                        "-fx-font-weight: bold;" +
+                        "-fx-font-size: 14;" +
+                        "-fx-padding: 10 20;" +
+                        "-fx-background-radius: 8;" +
+                        "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 8, 0, 0, 2);"));
 
         button.setOnMouseExited(e -> button.setStyle(
                 "-fx-background-color: " + color + ";" +
-                "-fx-text-fill: white;" +
-                "-fx-font-weight: bold;" +
-                "-fx-font-size: 14;" +
-                "-fx-padding: 10 20;" +
-                "-fx-background-radius: 8;" +
-                "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 5, 0, 0, 1);"
-        ));
+                        "-fx-text-fill: white;" +
+                        "-fx-font-weight: bold;" +
+                        "-fx-font-size: 14;" +
+                        "-fx-padding: 10 20;" +
+                        "-fx-background-radius: 8;" +
+                        "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 5, 0, 0, 1);"));
 
         return button;
     }
 
     private void generateList() {
-        data = new int[NUM_BARS];
+        final int NUM_ELEMENTS = 50; // Definimos 50 elementos
+        final int MAX_VALUE = 100; // Valor máximo de 250
+        data = new int[NUM_ELEMENTS];
         Random rnd = new Random();
 
         String selectedType = listTypeChoiceBox.getSelectionModel().getSelectedItem();
         switch (selectedType) {
             case "Ordenada":
-                for (int i = 0; i < NUM_BARS; i++) data[i] = i + 1;
+                for (int i = 0; i < NUM_ELEMENTS; i++)
+                    data[i] = i + 1;
                 break;
             case "Inversamente ordenada":
-                for (int i = 0; i < NUM_BARS; i++) data[i] = NUM_BARS - i;
+                for (int i = 0; i < NUM_ELEMENTS; i++)
+                    data[i] = NUM_ELEMENTS - i;
                 break;
             case "Aleatoria":
-                for (int i = 0; i < NUM_BARS; i++) data[i] = rnd.nextInt(NUM_BARS) + 1;
+                for (int i = 0; i < NUM_ELEMENTS; i++)
+                    data[i] = rnd.nextInt(MAX_VALUE) + 1;
                 break;
             case "Casi ordenada":
-                for (int i = 0; i < NUM_BARS; i++) data[i] = i + 1;
-                for (int i = 0; i < NUM_BARS / 10; i++) {
-                    int idx1 = rnd.nextInt(NUM_BARS);
-                    int idx2 = rnd.nextInt(NUM_BARS);
+                for (int i = 0; i < NUM_ELEMENTS; i++)
+                    data[i] = i + 1;
+                for (int i = 0; i < NUM_ELEMENTS / 10; i++) {
+                    int idx1 = rnd.nextInt(NUM_ELEMENTS);
+                    int idx2 = rnd.nextInt(NUM_ELEMENTS);
                     int temp = data[idx1];
                     data[idx1] = data[idx2];
                     data[idx2] = temp;
                 }
                 break;
             case "Con duplicados":
-                for (int i = 0; i < NUM_BARS; i++) data[i] = rnd.nextInt(NUM_BARS / 5) + 1;
+                for (int i = 0; i < NUM_ELEMENTS; i++)
+                    data[i] = rnd.nextInt(MAX_VALUE / 5) + 1;
                 break;
         }
 
@@ -271,113 +278,129 @@ public class MainController extends Application {
     }
 
     private void startSorting() {
+        if (running)
+            return;
+
+        if (!bubbleSortRadio.isSelected() && !selectionSortRadio.isSelected() && !insertionSortRadio.isSelected()) {
+            Platform.runLater(() -> {
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setTitle("Advertencia");
+                alert.setHeaderText("Ningún algoritmo seleccionado");
+                alert.setContentText("Por favor seleccione un algoritmo de ordenamiento");
+                alert.showAndWait();
+            });
+            return;
+        }
+
+        running = true;
+        startSortBtn.setDisable(true);
+
         new Thread(() -> {
-            String algorithm = getSelectedAlgorithm();
-            switch (algorithm) {
-                case "Bubble":
+            try {
+                timer.start();
+
+                if (bubbleSortRadio.isSelected()) {
                     bubbleSortWithAnimation();
-                    break;
-                case "Selection":
+                } else if (selectionSortRadio.isSelected()) {
                     selectionSortWithAnimation();
-                    break;
-                case "Insertion":
+                } else if (insertionSortRadio.isSelected()) {
                     insertionSortWithAnimation();
-                    break;
+                }
+
+                timer.stop();
+                Platform.runLater(() -> {
+                    System.out.printf("Tiempo de ejecución: %.2f ms%n", timer.getElapsedMilliseconds());
+                    running = false;
+                    startSortBtn.setDisable(false);
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    running = false;
+                    startSortBtn.setDisable(false);
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setTitle("Error");
+                    alert.setHeaderText("Error durante el ordenamiento");
+                    alert.setContentText(e.getMessage());
+                    alert.showAndWait();
+                });
             }
-            running = false;
         }).start();
     }
 
-    private String getSelectedAlgorithm() {
-        if (bubbleSortRadio.isSelected()) return "Bubble";
-        else if (selectionSortRadio.isSelected()) return "Selection";
-        else return "Insertion";
-    }
-
-    private void bubbleSortWithAnimation() {
+    private void bubbleSortWithAnimation() throws InterruptedException {
         int n = data.length;
         boolean swapped;
 
-        try {
-            for (int i = 0; i < n - 1 && running; i++) {
-                swapped = false;
-                for (int j = 0; j < n - i - 1 && running; j++) {
-                    highlightBars(j, j + 1, HIGHLIGHT_COLOR);
-                    Thread.sleep((long) (201 - speedSlider.getValue()));
+        for (int i = 0; i < n - 1 && running; i++) {
+            swapped = false;
+            for (int j = 0; j < n - i - 1 && running; j++) {
+                highlightBars(j, j + 1, HIGHLIGHT_COLOR);
+                Thread.sleep((long) (201 - speedSlider.getValue()));
 
-                    if (data[j] > data[j + 1]) {
-                        swapData(j, j + 1);
-                        swapped = true;
-                        Thread.sleep((long) (201 - speedSlider.getValue()));
-                    }
-                    unhighlightBars(j, j + 1);
+                if (data[j] > data[j + 1]) {
+                    swapData(j, j + 1);
+                    swapped = true;
+                    Thread.sleep((long) (201 - speedSlider.getValue()));
                 }
-                if (!swapped) break;
+                unhighlightBars(j, j + 1);
             }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+            if (!swapped)
+                break;
         }
     }
 
-    private void selectionSortWithAnimation() {
+    private void selectionSortWithAnimation() throws InterruptedException {
         int n = data.length;
 
-        try {
-            for (int i = 0; i < n - 1 && running; i++) {
-                int minIdx = i;
-                highlightBar(minIdx, HIGHLIGHT_COLOR);
+        for (int i = 0; i < n - 1 && running; i++) {
+            int minIdx = i;
+            highlightBar(minIdx, HIGHLIGHT_COLOR);
 
-                for (int j = i + 1; j < n && running; j++) {
-                    highlightBar(j, ACCENT_COLOR);
-                    Thread.sleep((long) (201 - speedSlider.getValue()));
+            for (int j = i + 1; j < n && running; j++) {
+                highlightBar(j, ACCENT_COLOR);
+                Thread.sleep((long) (201 - speedSlider.getValue()));
 
-                    if (data[j] < data[minIdx]) {
-                        unhighlightBar(minIdx);
-                        minIdx = j;
-                        highlightBar(minIdx, HIGHLIGHT_COLOR);
-                    } else {
-                        unhighlightBar(j);
-                    }
+                if (data[j] < data[minIdx]) {
+                    unhighlightBar(minIdx);
+                    minIdx = j;
+                    highlightBar(minIdx, HIGHLIGHT_COLOR);
+                } else {
+                    unhighlightBar(j);
                 }
-
-                if (minIdx != i) {
-                    swapData(i, minIdx);
-                    Thread.sleep((long) (201 - speedSlider.getValue()));
-                }
-                unhighlightBar(minIdx);
-                unhighlightBar(i);
             }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
 
-    private void insertionSortWithAnimation() {
-        int n = data.length;
-
-        try {
-            for (int i = 1; i < n && running; i++) {
-                int key = data[i];
-                int j = i - 1;
-                highlightBar(i, HIGHLIGHT_COLOR);
-
-                while (j >= 0 && data[j] > key && running) {
-                    highlightBar(j, ACCENT_COLOR);
-                    Thread.sleep((long) (201 - speedSlider.getValue()));
-
-                    data[j + 1] = data[j];
-                    updateBarHeight(j + 1);
-                    unhighlightBar(j + 1);
-                    j--;
-                }
-                data[j + 1] = key;
-                updateBarHeight(j + 1);
-                unhighlightBar(i);
-                if (j + 1 >= 0) unhighlightBar(j + 1);
+            if (minIdx != i) {
+                swapData(i, minIdx);
                 Thread.sleep((long) (201 - speedSlider.getValue()));
             }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+            unhighlightBar(minIdx);
+            unhighlightBar(i);
+        }
+    }
+
+    private void insertionSortWithAnimation() throws InterruptedException {
+        int n = data.length;
+
+        for (int i = 1; i < n && running; i++) {
+            int key = data[i];
+            int j = i - 1;
+            highlightBar(i, HIGHLIGHT_COLOR);
+
+            while (j >= 0 && data[j] > key && running) {
+                highlightBar(j, ACCENT_COLOR);
+                Thread.sleep((long) (201 - speedSlider.getValue()));
+
+                data[j + 1] = data[j];
+                updateBarHeight(j + 1);
+                unhighlightBar(j + 1);
+                j--;
+            }
+            data[j + 1] = key;
+            updateBarHeight(j + 1);
+            unhighlightBar(i);
+            if (j + 1 >= 0)
+                unhighlightBar(j + 1);
+            Thread.sleep((long) (201 - speedSlider.getValue()));
         }
     }
 
@@ -440,120 +463,38 @@ public class MainController extends Application {
         });
     }
 
-    @SuppressWarnings("unchecked")
     private void showComparisonChart() {
-        Stage stage = new Stage();
-        stage.setTitle("Comparación de Tiempos - Arreglo de 50 Elementos");
-
         int[] testData = new int[50];
         Random rnd = new Random();
-        for (int i = 0; i < 50; i++) testData[i] = rnd.nextInt(50) + 1;
+        for (int i = 0; i < 50; i++)
+            testData[i] = rnd.nextInt(50) + 1;
 
-        long bubbleTime = measureSortTime(Arrays.copyOf(testData, testData.length), "Bubble");
-        long selectionTime = measureSortTime(Arrays.copyOf(testData, testData.length), "Selection");
-        long insertionTime = measureSortTime(Arrays.copyOf(testData, testData.length), "Insertion");
+        Timer bubbleTimer = new Timer();
+        bubbleTimer.start();
+        bubbleSort.sort(Arrays.copyOf(testData, testData.length));
+        bubbleTimer.stop();
 
-        CategoryAxis xAxis = new CategoryAxis();
-        xAxis.setLabel("Algoritmo");
-        xAxis.setStyle("-fx-tick-label-fill: " + LIGHT_TEXT + ";");
+        Timer selectionTimer = new Timer();
+        selectionTimer.start();
+        selectionSort.sort(Arrays.copyOf(testData, testData.length));
+        selectionTimer.stop();
 
-        NumberAxis yAxis = new NumberAxis();
-        yAxis.setLabel("Tiempo (milisegundos)");
-        yAxis.setStyle("-fx-tick-label-fill: " + LIGHT_TEXT + ";");
+        Timer insertionTimer = new Timer();
+        insertionTimer.start();
+        insertionSort.sort(Arrays.copyOf(testData, testData.length));
+        insertionTimer.stop();
 
-        BarChart<String, Number> barChart = new BarChart<>(xAxis, yAxis);
-        barChart.setTitle("Comparación de Tiempos de Ejecución");
-        barChart.setStyle("-fx-background-color: " + DARK_BG + "; -fx-text-fill: " + LIGHT_TEXT + ";");
-        barChart.setLegendVisible(false);
-
-        XYChart.Series<String, Number> series = new XYChart.Series<>();
-        XYChart.Data<String, Number> bubbleData = new XYChart.Data<>("Bubble Sort", bubbleTime);
-        XYChart.Data<String, Number> selectionData = new XYChart.Data<>("Selection Sort", selectionTime);
-        XYChart.Data<String, Number> insertionData = new XYChart.Data<>("Insertion Sort", insertionTime);
-
-        series.getData().addAll(bubbleData, selectionData, insertionData);
-        barChart.getData().add(series);
-
-        // Personalizar colores de las barras
-        bubbleData.getNode().setStyle("-fx-bar-fill: " + PRIMARY_COLOR + ";");
-        selectionData.getNode().setStyle("-fx-bar-fill: " + SECONDARY_COLOR + ";");
-        insertionData.getNode().setStyle("-fx-bar-fill: " + BAR_COLOR + ";");
-
-        VBox layout = new VBox(barChart);
-        layout.setPadding(new Insets(15));
-        layout.setStyle("-fx-background-color: " + DARK_BG + ";");
-
-        Scene scene = new Scene(layout, 600, 400);
-        stage.setScene(scene);
-        stage.show();
-    }
-
-    private long measureSortTime(int[] array, String algorithm) {
-        long start = System.nanoTime();
-
-        switch (algorithm) {
-            case "Bubble":
-                bubbleSortNoAnimation(array);
-                break;
-            case "Selection":
-                selectionSortNoAnimation(array);
-                break;
-            case "Insertion":
-                insertionSortNoAnimation(array);
-                break;
-        }
-
-        return (System.nanoTime() - start) / 1_000_000;
-    }
-
-    private void bubbleSortNoAnimation(int[] arr) {
-        int n = arr.length;
-        boolean swapped;
-        for (int i = 0; i < n - 1; i++) {
-            swapped = false;
-            for (int j = 0; j < n - i - 1; j++) {
-                if (arr[j] > arr[j + 1]) {
-                    int temp = arr[j];
-                    arr[j] = arr[j + 1];
-                    arr[j + 1] = temp;
-                    swapped = true;
-                }
-            }
-            if (!swapped) break;
-        }
-    }
-
-    private void selectionSortNoAnimation(int[] arr) {
-        int n = arr.length;
-        for (int i = 0; i < n - 1; i++) {
-            int minIdx = i;
-            for (int j = i + 1; j < n; j++) {
-                if (arr[j] < arr[minIdx]) {
-                    minIdx = j;
-                }
-            }
-            if (minIdx != i) {
-                int temp = arr[minIdx];
-                arr[minIdx] = arr[i];
-                arr[i] = temp;
-            }
-        }
-    }
-
-    private void insertionSortNoAnimation(int[] arr) {
-        int n = arr.length;
-        for (int i = 1; i < n; i++) {
-            int key = arr[i];
-            int j = i - 1;
-            while (j >= 0 && arr[j] > key) {
-                arr[j + 1] = arr[j];
-                j--;
-            }
-            arr[j + 1] = key;
-        }
-    }
-
-    public static void main(String[] args) {
-        launch(args);
+        Stage stage = new Stage();
+        GraphController graphController = new GraphController();
+        graphController.showPerformanceComparison(
+                stage,
+                (long) bubbleTimer.getElapsedMilliseconds(),
+                (long) selectionTimer.getElapsedMilliseconds(),
+                (long) insertionTimer.getElapsedMilliseconds(),
+                PRIMARY_COLOR,
+                SECONDARY_COLOR,
+                BAR_COLOR,
+                DARK_BG,
+                LIGHT_TEXT);
     }
 }
