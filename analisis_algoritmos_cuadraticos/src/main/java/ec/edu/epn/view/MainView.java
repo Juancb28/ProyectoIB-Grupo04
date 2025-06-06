@@ -13,6 +13,16 @@ import javafx.application.Platform;
 import java.util.*;
 import java.util.function.Consumer;
 
+/**
+ * Clase que representa la vista principal del visualizador de algoritmos de ordenamiento.
+ *
+ * <p>Permite al usuario seleccionar un algoritmo (Bubble Sort, Selection Sort o Insertion Sort),
+ * elegir el tipo de lista de entrada (ordenada, inversamente ordenada, aleatoria),
+ * visualizar el proceso de ordenamiento mediante animaciones y acceder a gráficas de rendimiento.</p>
+ *
+ * @author 
+ * @version 1.0
+ */
 public class MainView {
 
     private RadioButton bubbleSortRadio;
@@ -24,6 +34,11 @@ public class MainView {
     private int[] data;
     private static final int NUM_BARS = 50;
 
+    /**
+     * Muestra la ventana principal de la aplicación con la interfaz gráfica.
+     *
+     * @param primaryStage el escenario principal de JavaFX.
+     */
     public void show(Stage primaryStage) {
         BorderPane root = new BorderPane();
 
@@ -81,6 +96,11 @@ public class MainView {
         primaryStage.show();
     }
 
+    /**
+     * Dibuja un arreglo de enteros como barras verticales dentro del panel de visualización.
+     *
+     * @param array el arreglo de enteros a representar gráficamente.
+     */
     private void drawData(int[] array) {
         Platform.runLater(() -> {
             visualizationPane.getChildren().clear();
@@ -98,6 +118,11 @@ public class MainView {
         });
     }
 
+    /**
+     * Dibuja el arreglo y realiza una pausa breve para crear una animación visible.
+     *
+     * @param array el arreglo que se está ordenando.
+     */
     private void sleepAndDraw(int[] array) {
         drawData(array);
         try {
@@ -106,6 +131,12 @@ public class MainView {
         }
     }
 
+    /**
+     * Ejecuta un algoritmo de ordenamiento en un hilo separado y lo anima.
+     *
+     * @param array el arreglo original.
+     * @param sortingAlgorithm el algoritmo de ordenamiento como función lambda.
+     */
     private void animateSort(int[] array, Consumer<int[]> sortingAlgorithm) {
         new Thread(() -> {
             int[] copy = Arrays.copyOf(array, array.length);
@@ -113,6 +144,9 @@ public class MainView {
         }).start();
     }
 
+    /**
+     * Inicia el proceso de ordenamiento según el algoritmo seleccionado.
+     */
     public void startSorting() {
         generateList();
         if (bubbleSortRadio.isSelected()) {
@@ -124,6 +158,9 @@ public class MainView {
         }
     }
 
+    /**
+     * Genera una lista de enteros basada en la opción seleccionada (ordenada, inversa, aleatoria).
+     */
     private void generateList() {
         data = new int[NUM_BARS];
         for (int i = 0; i < NUM_BARS; i++) data[i] = i + 1;
@@ -144,6 +181,11 @@ public class MainView {
         drawData(data);
     }
 
+    /**
+     * Implementación del algoritmo Bubble Sort con animación.
+     *
+     * @param array el arreglo a ordenar.
+     */
     private void bubbleSort(int[] array) {
         for (int i = 0; i < array.length - 1; i++) {
             for (int j = 0; j < array.length - i - 1; j++) {
@@ -157,6 +199,11 @@ public class MainView {
         }
     }
 
+    /**
+     * Implementación del algoritmo Selection Sort con animación.
+     *
+     * @param array el arreglo a ordenar.
+     */
     private void selectionSort(int[] array) {
         for (int i = 0; i < array.length - 1; i++) {
             int min = i;
@@ -172,6 +219,11 @@ public class MainView {
         }
     }
 
+    /**
+     * Implementación del algoritmo Insertion Sort con animación.
+     *
+     * @param array el arreglo a ordenar.
+     */
     private void insertionSort(int[] array) {
         for (int i = 1; i < array.length; i++) {
             int key = array[i];
@@ -186,8 +238,10 @@ public class MainView {
         }
     }
 
+    /**
+     * Muestra una ventana con las gráficas de rendimiento (actualmente placeholder).
+     */
     private void showGraphWindow() {
-        // Aquí deberías implementar el contenido de la nueva ventana
         Stage graphStage = new Stage();
         graphStage.setTitle("Gráficas de rendimiento");
         graphStage.setScene(new Scene(new Label("Gráficas aquí..."), 300, 200));
