@@ -5,6 +5,7 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
@@ -19,9 +20,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
+@SuppressWarnings("unused")
 public class MainController extends Application {
 
-    @SuppressWarnings("unused")
     private static final int NUM_BARS = 50;
     private int[] data;
     private RadioButton bubbleSortRadio;
@@ -35,6 +36,7 @@ public class MainController extends Application {
     private boolean running = false;
     private Timer timer = new Timer();
     private Button startSortBtn;
+    private Label timeLabel; // Nuevo label para mostrar el tiempo
 
     private final String PRIMARY_COLOR = "#3498db";
     private final String SECONDARY_COLOR = "#2ecc71";
@@ -156,14 +158,43 @@ public class MainController extends Application {
             running = false;
             generateList();
             startSortBtn.setDisable(false);
+            updateTimeDisplay(0.0); // Resetear el tiempo
         });
 
         Button compareBtn = createStyledButton("Comparar Tiempos", BAR_COLOR);
         compareBtn.setOnAction(e -> showComparisonChart());
 
-        HBox bottomPane = new HBox(15);
+        // Crear el label para mostrar el tiempo de ejecución
+        timeLabel = new Label("Tiempo: 0.00 ms");
+        timeLabel.setStyle(
+                "-fx-text-fill: " + HIGHLIGHT_COLOR + ";" +
+                        "-fx-font-size: 16;" +
+                        "-fx-font-weight: bold;" +
+                        "-fx-padding: 10;" +
+                        "-fx-background-color: rgba(52, 73, 94, 0.8);" +
+                        "-fx-background-radius: 8;" +
+                        "-fx-border-color: " + HIGHLIGHT_COLOR + ";" +
+                        "-fx-border-width: 2;" +
+                        "-fx-border-radius: 8;");
+
+        // Crear un contenedor para los botones (lado izquierdo)
+        HBox buttonsContainer = new HBox(15);
+        buttonsContainer.getChildren().addAll(startSortBtn, stopSortBtn, resetBtn, compareBtn);
+
+        // Crear el panel inferior principal
+        HBox bottomPane = new HBox();
         bottomPane.setPadding(new Insets(15));
-        bottomPane.getChildren().addAll(startSortBtn, stopSortBtn, resetBtn, compareBtn);
+
+        // Agregar los botones al lado izquierdo
+        bottomPane.getChildren().add(buttonsContainer);
+
+        // Crear un espaciador para empujar el tiempo hacia la derecha
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        bottomPane.getChildren().add(spacer);
+
+        // Agregar el label del tiempo al lado derecho
+        bottomPane.getChildren().add(timeLabel);
 
         return bottomPane;
     }
@@ -198,6 +229,13 @@ public class MainController extends Application {
                         "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 5, 0, 0, 1);"));
 
         return button;
+    }
+
+    // Nuevo método para actualizar el display del tiempo
+    private void updateTimeDisplay(double milliseconds) {
+        Platform.runLater(() -> {
+            timeLabel.setText(String.format("Tiempo: %.2f ms", milliseconds));
+        });
     }
 
     private void generateList() {
@@ -294,6 +332,7 @@ public class MainController extends Application {
 
         running = true;
         startSortBtn.setDisable(true);
+        updateTimeDisplay(0.0); // Resetear el tiempo al iniciar
 
         new Thread(() -> {
             try {
@@ -309,7 +348,8 @@ public class MainController extends Application {
 
                 timer.stop();
                 Platform.runLater(() -> {
-                    System.out.printf("Tiempo de ejecución: %.2f ms%n", timer.getElapsedMilliseconds());
+                    double elapsedTime = timer.getElapsedMilliseconds();
+                    updateTimeDisplay(elapsedTime);
                     running = false;
                     startSortBtn.setDisable(false);
                 });
